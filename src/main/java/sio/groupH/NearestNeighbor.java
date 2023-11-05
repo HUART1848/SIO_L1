@@ -5,30 +5,48 @@ import sio.tsp.TspConstructiveHeuristic;
 import sio.tsp.TspTour;
 
 import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.stream.IntStream;
 
 public final class NearestNeighbor implements TspConstructiveHeuristic {
   private final int DEFAULT_SEARCH_INDEX = -1;
 
-  private int findClosestAvailableCity(TspData data, boolean[] isAvailable, int originCity) {
-    int closestCity = DEFAULT_SEARCH_INDEX;
-    long closestDistance = Long.MAX_VALUE;
-    long currentDistance;
+  /**
+   * Cherche la plus proche ville visitable parmi les données
+   *
+   * @param data        Données d'un TSP
+   * @param isAvailable Tableau indiquant si une ville peut être visitée
+   * @param current     Ville d'origine pour calculer les distances
+   * @return La ville la plus proche (ou index par défaut si aucune ne peut être visitée)
+   * @author Farouk Ferchichi & Hugo Huart
+   */
+  private int findClosestAvailableCity(TspData data, boolean[] isAvailable, int current) {
+    int closest = DEFAULT_SEARCH_INDEX;
+    long minDistance = Long.MAX_VALUE;
+    long curDistance;
 
-    for (int nextCity = 0; nextCity < data.getNumberOfCities(); ++nextCity) {
-      currentDistance = data.getDistance(originCity, nextCity);
-      if (currentDistance < closestDistance && isAvailable[nextCity]) {
-        closestCity = nextCity;
-        closestDistance = currentDistance;
+    for (int i = 0; i < data.getNumberOfCities(); ++i) {
+      curDistance = data.getDistance(current, i);
+
+      // En cas d'égalité, la meilleure ville actuelle prime (qui est de plus petit numéro)
+      if (curDistance < minDistance && isAvailable[i]) {
+        closest = i;
+        minDistance = curDistance;
       }
     }
 
-    return closestCity;
+    return closest;
   }
 
+  /**
+   * Applique une heuristique <i>Nearest neighbour</i> a des données d'un TSP
+   *
+   * @param data           Data of problem instance
+   * @param startCityIndex Index of starting city, if needed by the implementation
+   * @return Tournée obtenue
+   * @throws IllegalArgumentException si les données ne sont pas applicables
+   * @author Farouk Ferchichi & Hugo Huart
+   */
   @Override
-  public TspTour computeTour(TspData data, int startCityIndex) {
+  public TspTour computeTour(TspData data, int startCityIndex) throws IllegalArgumentException {
     if (data.getNumberOfCities() < 3) {
       throw new IllegalArgumentException("There should be at least 3 cities");
     }
@@ -42,20 +60,20 @@ public final class NearestNeighbor implements TspConstructiveHeuristic {
     Arrays.fill(isAvailable, true);
 
     long totalDistance = 0;
-    int current = startCityIndex;
-    int next;
+    int s = startCityIndex;
+    int t;
 
     for (int i = 0; i < data.getNumberOfCities(); ++i) {
-      tour[i] = current;
-      isAvailable[current] = false;
+      tour[i] = s;
+      isAvailable[s] = false;
 
-      next = findClosestAvailableCity(data, isAvailable, current);
-      if (next != DEFAULT_SEARCH_INDEX) {
+      t = findClosestAvailableCity(data, isAvailable, s);
+      if (t != DEFAULT_SEARCH_INDEX) {
         // Si on n'est pas dans le cas de la dernière visitée
-        totalDistance += data.getDistance(current, next);
+        totalDistance += data.getDistance(s, t);
       }
 
-      current = next;
+      s = t;
     }
 
     return new TspTour(data, tour, totalDistance);
